@@ -1,4 +1,4 @@
-name: CI/CD SkillHub EC06
+name: CI/CD SkillHub EC09
 
 on:
   push:
