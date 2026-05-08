@@ -1,0 +1,6 @@
+com.example.auth_tp3
+com.example.auth_tp3.controller
+com.example.auth_tp3.entity
+com.example.auth_tp3.exception
+com.example.auth_tp3.repository
+com.example.auth_tp3.service

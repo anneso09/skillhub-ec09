@@ -1,21 +1,25 @@
 package com.example.auth_tp3.exception;
 
-// ─────────────────────────────────────────────────────────────────
-// ResourceConflictException.java
-// Rôle : exception métier pour les conflits de ressources
-//
-// Lancée par AuthService dans ce cas :
-//   - register() : un utilisateur avec cet email existe déjà
-//
-// Interceptée par GlobalExceptionHandler qui la transforme
-// en réponse HTTP 409 (Conflict)
-//
-// 409 est plus précis que 400 — il indique que la requête
-// est valide mais entre en conflit avec l'état actuel
-// de la ressource en base de données
-// ─────────────────────────────────────────────────────────────────
+/**
+ * Exception levée lors d'un conflit de ressource en base de données.
+ *
+ * <p>Lancée par {@link com.example.auth_tp3.service.AuthService#register}
+ * lorsqu'un utilisateur tente de s'inscrire avec un email
+ * déjà existant en base de données.</p>
+ *
+ * <p>Interceptée par {@link GlobalExceptionHandler}
+ * et transformée en réponse HTTP 409 Conflict.</p>
+ *
+ * @author Ton nom
+ * @version 5.0
+ */
 public class ResourceConflictException extends RuntimeException {
 
+    /**
+     * Crée une exception de conflit de ressource avec un message explicite.
+     *
+     * @param message Description du conflit détecté
+     */
     public ResourceConflictException(String message) {
         super(message);
     }

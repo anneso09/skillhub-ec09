@@ -87,8 +87,8 @@ class FormationController extends Controller
             // Charge les modules triés par leur ordre défini
             'modules' => fn($q) => $q->orderBy('ordre')
         ])
-        ->withCount('enrollments')
-        ->find($id);
+            ->withCount('enrollments')
+            ->find($id);
 
         if (!$formation) {
             return response()->json(['message' => 'Formation introuvable'], 404);
@@ -106,7 +106,10 @@ class FormationController extends Controller
             'user_id'   => $request->auth_user_id ?? null,
         ]);
 
-        return response()->json($formation);
+        return response()->json(array_merge($formation->toArray(), [
+            'note_moyenne' => round($formation->ratings()->avg('note'), 1),
+            'nombre_avis'  => $formation->ratings()->count(),
+        ]));
     }
 
 
