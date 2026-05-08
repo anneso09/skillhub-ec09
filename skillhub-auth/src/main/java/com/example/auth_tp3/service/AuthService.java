@@ -8,96 +8,115 @@ import com.example.auth_tp3.exception.InvalidInputException;
 import com.example.auth_tp3.exception.ResourceConflictException;
 import com.example.auth_tp3.repository.UserRepository;
 
-// ─────────────────────────────────────────────────────────────────
-// AuthService.java
-// Rôle : contient toute la logique métier de l'authentification
-//
-// C'est ici que se passent les vraies vérifications :
-//   - validation des données (email, password, role)
-//   - vérification que l'email n'est pas déjà utilisé
-//   - hashage du mot de passe avant sauvegarde
-//   - vérification du mot de passe au login
-//   - génération du token JWT
-//
-// AuthController délègue tout le travail à cette classe —
-// le controller ne fait que recevoir la requête et renvoyer
-// la réponse HTTP
-// ─────────────────────────────────────────────────────────────────
-
-// @Service indique à Spring Boot que cette classe est un composant
-// métier — elle sera instanciée au démarrage et injectable
-// partout via le constructeur
+/**
+ * Service principal de l'authentification pour SkillHub.
+ *
+ * <p>
+ * Contient toute la logique métier d'authentification : validation des données,
+ * vérification de l'unicité de l'email, chiffrement du mot de passe,
+ * vérification au login, et génération du token JWT.</p>
+ *
+ * * <p>
+ * {@link com.example.auth_tp3.controller.AuthController} délègue... tout le
+ * traitement à cette classe — le controller ne fait que recevoir la requête
+ * HTTP et renvoyer la réponse.</p>
+ *
+ * <p>
+ * <strong>⚠️ Cette implémentation utilise un chiffrement réversible (AES via
+ * Master Key) nécessaire au protocole HMAC. Ne pas utiliser telle quelle en
+ * production sans audit de sécurité préalable.</strong></p>
+ *
+ * @author Ton nom
+ * @version 5.0
+ * @see com.example.auth_tp3.controller.AuthController
+ * @see EncryptionService
+ * @see JwtService
+ */
 @Service
 public class AuthService {
 
-    // ── Injection des dépendances ─────────────────────────────
-    private final UserRepository    userRepository;
-    private final EncryptionService encryptionService;
-    private final JwtService        jwtService;
+    /**
+     * Repository d'accès aux données utilisateurs.
+     */
+    private final UserRepository userRepository;
 
+    /**
+     * Service de chiffrement AES des mots de passe.
+     */
+    private final EncryptionService encryptionService;
+
+    /**
+     * Service de génération et validation des tokens JWT.
+     */
+    private final JwtService jwtService;
+
+    /**
+     * Constructeur avec injection des dépendances.
+     *
+     * @param userRepository Repository JPA des utilisateurs
+     * @param encryptionService Service de chiffrement AES
+     * @param jwtService Service de gestion des tokens JWT
+     */
     public AuthService(UserRepository userRepository,
-                       EncryptionService encryptionService,
-                       JwtService jwtService) {
-        this.userRepository    = userRepository;
+            EncryptionService encryptionService,
+            JwtService jwtService) {
+        this.userRepository = userRepository;
         this.encryptionService = encryptionService;
-        this.jwtService        = jwtService;
+        this.jwtService = jwtService;
     }
 
+    /**
+     * Inscrit un nouvel utilisateur sur la plateforme SkillHub.
+     *
+     * <p>
+     * Étapes exécutées dans l'ordre :
+     * <ol>
+     * <li>Validation du format de l'email</li>
+     * <li>Validation de la longueur du mot de passe (min. 12 caractères)</li>
+     * <li>Vérification que l'email n'est pas déjà utilisé</li>
+     * <li>Validation du rôle (apprenant ou formateur)</li>
+     * <li>Chiffrement du mot de passe via {@link EncryptionService}</li>
+     * <li>Sauvegarde de l'utilisateur en base</li>
+     * </ol>
+     * </p>
+     *
+     * @param nom Nom de famille de l'utilisateur
+     * @param prenom Prénom de l'utilisateur
+     * @param email Adresse email (identifiant unique)
+     * @param password Mot de passe en clair (minimum 12 caractères)
+     * @param role Rôle souhaité : "apprenant" ou "formateur"
+     * @return L'entité {@link User} persistée avec son ID généré
+     * @throws InvalidInputException Si email, mot de passe ou rôle invalide
+     * @throws ResourceConflictException Si l'email est déjà utilisé
+     * @throws Exception Si le chiffrement échoue
+     */
+    public User register(String nom, String prenom,
+            String email, String password,
+            String role) throws Exception {
 
-    // ─────────────────────────────────────────────────────────
-    // INSCRIPTION
-    //
-    // Étapes :
-    //   1. Validation des données entrantes
-    //   2. Vérification que l'email n'existe pas déjà en BDD
-    //   3. Hashage du mot de passe (on ne stocke jamais en clair)
-    //   4. Sauvegarde de l'utilisateur en BDD
-    //   5. Retour de l'entité User persistée
-    // ─────────────────────────────────────────────────────────
-    public User register(String nom,    String prenom,
-                         String email,  String password,
-                         String role) throws Exception {
-
-        // ── Validation email ──────────────────────────────────
-        // Vérification basique du format — une librairie de
-        // validation plus complète pourrait être utilisée
-        // mais ceci suffit pour notre cas d'usage
         if (email == null || !email.contains("@")) {
             throw new InvalidInputException("Format d'email invalide");
         }
 
-        // ── Validation mot de passe ───────────────────────────
-        // Minimum 12 caractères imposé par le cahier des charges
         if (password == null || password.length() < 12) {
             throw new InvalidInputException(
-                "Le mot de passe doit faire au moins 12 caractères"
+                    "Le mot de passe doit faire au moins 12 caractères"
             );
         }
 
-        // ── Vérification unicité email ────────────────────────
-        // On vérifie AVANT de hasher le mot de passe pour éviter
-        // un traitement inutile si l'email est déjà pris
         if (userRepository.existsByEmail(email)) {
             throw new ResourceConflictException("Cet email est déjà utilisé");
         }
 
-        // ── Validation rôle ───────────────────────────────────
-        // Seules deux valeurs sont acceptées — on rejette tout
-        // autre rôle pour éviter les élévations de privilèges
-        if (role == null ||
-            (!role.equals("apprenant") && !role.equals("formateur"))) {
+        if (role == null
+                || (!role.equals("apprenant") && !role.equals("formateur"))) {
             throw new InvalidInputException(
-                "Le rôle doit être apprenant ou formateur"
+                    "Le rôle doit être apprenant ou formateur"
             );
         }
 
-        // ── Hashage du mot de passe ───────────────────────────
-        // On ne stocke JAMAIS un mot de passe en clair en BDD
-        // EncryptionService gère le hashage (BCrypt ou AES
-        // selon l'implémentation)
         String encryptedPassword = encryptionService.encrypt(password);
 
-        // ── Création et sauvegarde de l'utilisateur ───────────
         User user = new User();
         user.setNom(nom);
         user.setPrenom(prenom);
@@ -105,50 +124,47 @@ public class AuthService {
         user.setPassword(encryptedPassword);
         user.setRole(role);
 
-        // save() insère en BDD et retourne l'entité avec son ID
-        // généré automatiquement
         return userRepository.save(user);
     }
 
-
-    // ─────────────────────────────────────────────────────────
-    // LOGIN
-    //
-    // Étapes :
-    //   1. Recherche de l'utilisateur par email
-    //   2. Vérification du mot de passe
-    //   3. Génération et retour du token JWT
-    //
-    // Important : on renvoie le même message d'erreur que
-    // l'email soit inconnu ou que le mot de passe soit faux.
-    // C'est volontaire — cela empêche de deviner si un email
-    // est enregistré sur la plateforme (sécurité)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Authentifie un utilisateur et génère un token JWT.
+     *
+     * <p>
+     * Étapes exécutées dans l'ordre :
+     * <ol>
+     * <li>Recherche de l'utilisateur par email</li>
+     * <li>Déchiffrement et comparaison du mot de passe</li>
+     * <li>Génération du token JWT signé</li>
+     * </ol>
+     * </p>
+     *
+     * <p>
+     * <strong>Sécurité :</strong> le même message d'erreur est renvoyé que
+     * l'email soit inconnu ou que le mot de passe soit incorrect, afin
+     * d'empêcher l'énumération des comptes.</p>
+     *
+     * @param email Adresse email de l'utilisateur
+     * @param password Mot de passe en clair saisi par l'utilisateur
+     * @return Le token JWT signé à retourner au client
+     * @throws AuthenticationFailedException Si email introuvable ou mot de
+     * passe incorrect
+     * @throws Exception Si le déchiffrement échoue
+     */
     public String login(String email, String password) throws Exception {
 
-        // ── Recherche utilisateur ─────────────────────────────
-        // orElseThrow() lance AuthenticationFailedException
-        // si aucun utilisateur n'a cet email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AuthenticationFailedException(
-                    "Email ou mot de passe incorrect"
-                ));
+                "Email ou mot de passe incorrect"
+        ));
 
-        // ── Vérification mot de passe ─────────────────────────
-        // On déchiffre le mot de passe stocké et on le compare
-        // au mot de passe reçu
         String storedPassword = encryptionService.decrypt(user.getPassword());
         if (!storedPassword.equals(password)) {
             throw new AuthenticationFailedException(
-                "Email ou mot de passe incorrect"
+                    "Email ou mot de passe incorrect"
             );
         }
 
-        // ── Génération du token JWT ───────────────────────────
-        // JwtService crée un token signé contenant :
-        // email (sub), role, nom, prenom, userId
-        // Ce token sera renvoyé à React et stocké dans
-        // le localStorage
         return jwtService.generateToken(user);
     }
 }

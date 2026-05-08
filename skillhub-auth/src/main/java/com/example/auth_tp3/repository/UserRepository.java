@@ -7,42 +7,48 @@ import org.springframework.stereotype.Repository;
 
 import com.example.auth_tp3.entity.User;
 
-// ─────────────────────────────────────────────────────────────────
-// UserRepository.java
-// Rôle : accès aux données de la table "users" en MySQL
-//
-// JpaRepository fournit automatiquement les opérations CRUD
-// de base sans écrire une seule ligne de SQL :
-//   - save(user)        → INSERT ou UPDATE
-//   - findById(id)      → SELECT WHERE id = ?
-//   - findAll()         → SELECT * FROM users
-//   - delete(user)      → DELETE WHERE id = ?
-//   - count()           → SELECT COUNT(*)
-//
-// On étend JpaRepository<User, Long> :
-//   - User : l'entité mappée sur la table
-//   - Long : le type de la clé primaire (id)
-// ─────────────────────────────────────────────────────────────────
-
-// @Repository indique à Spring Boot que cette interface
-// est un composant d'accès aux données — elle sera
-// instanciée automatiquement et injectable via constructeur
+/**
+ * Repository JPA pour l'accès aux données de la table "users".
+ *
+ * <p>Étend {@link JpaRepository} qui fournit automatiquement
+ * les opérations CRUD de base sans écrire de SQL :
+ * {@code save()}, {@code findById()}, {@code findAll()},
+ * {@code delete()}, {@code count()}.</p>
+ *
+ * <p>Spring Data JPA génère automatiquement les requêtes SQL
+ * à partir des noms des méthodes déclarées.</p>
+ *
+ * @author MU_202603
+ * @version 5.0
+ * @see com.example.auth_tp3.entity.User
+ * @see com.example.auth_tp3.service.AuthService
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // Spring Data JPA génère automatiquement la requête SQL
-    // à partir du nom de la méthode — pas besoin d'écrire le SQL
-    //
-    // findByEmail → SELECT * FROM users WHERE email = ? LIMIT 1
-    //
-    // Optional<User> = le résultat peut être null sans exception
-    // On utilise orElseThrow() dans AuthService pour gérer
-    // le cas où l'email n'existe pas
+    /**
+     * Recherche un utilisateur par son adresse email.
+     *
+     * <p>Génère automatiquement :
+     * {@code SELECT * FROM users WHERE email = ? LIMIT 1}</p>
+     *
+     * @param email Adresse email à rechercher
+     * @return Un {@link Optional} contenant l'utilisateur si trouvé,
+     *         vide sinon
+     */
     Optional<User> findByEmail(String email);
 
-    // existsByEmail → SELECT COUNT(*) FROM users WHERE email = ?
-    // Retourne true si au moins un utilisateur a cet email
-    // Utilisé dans AuthService.register() pour bloquer
-    // les inscriptions avec un email déjà utilisé
+    /**
+     * Vérifie si un utilisateur existe avec l'email donné.
+     *
+     * <p>Génère automatiquement :
+     * {@code SELECT COUNT(*) FROM users WHERE email = ?}</p>
+     *
+     * <p>Utilisé dans {@link com.example.auth_tp3.service.AuthService#register}
+     * pour bloquer les inscriptions avec un email déjà utilisé.</p>
+     *
+     * @param email Adresse email à vérifier
+     * @return {@code true} si l'email existe déjà, {@code false} sinon
+     */
     boolean existsByEmail(String email);
 }
