@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\RatingController;
 
 // ─────────────────────────────────────────────────────────────────
 // routes/api.php
@@ -85,5 +86,8 @@ Route::middleware('jwt.verify')->group(function () {
 
         // Mise à jour de la progression dans une formation
         Route::put('/formations/{id}/progression',    [EnrollmentController::class, 'updateProgression']);
+
+        // Noter une formation
+        Route::post('/formations/{id}/noter', [RatingController::class, 'noter']);
     });
 });

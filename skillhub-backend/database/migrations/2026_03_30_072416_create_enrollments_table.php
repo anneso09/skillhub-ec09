@@ -6,29 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('enrollments', function (Blueprint $table) {
             $table->id();
-
             $table->bigInteger('utilisateur_id');
             $table->bigInteger('formation_id');
             $table->unsignedInteger('progression')->default(0);
             $table->timestamp('date_inscription')->useCurrent();
-            $table->unique(['utilisateur_id', 'formation_id']); // un apprenant ne peut s'inscrire qu'une seule fois à la même formation
+            $table->unique(['utilisateur_id', 'formation_id']);
             $table->timestamps();
-        });
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropForeign(['utilisateur_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('enrollments');
