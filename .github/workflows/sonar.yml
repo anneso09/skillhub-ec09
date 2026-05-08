@@ -1,0 +1,55 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: pdo, pdo_sqlite, sqlite3, mongodb-1.20.0
+          coverage: xdebug
+
+      - name: Install PHP dependencies
+        working-directory: skillhub-backend
+        run: composer install --no-interaction --prefer-dist --ignore-platform-req=ext-mongodb
+
+      - name: Run PHP tests with coverage
+        working-directory: skillhub-backend
+        run: php artisan test --coverage-clover coverage.xml
+        env:
+          APP_ENV: testing
+          APP_KEY: ${{ secrets.APP_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH_SERVICE_URL: http://skillhub-auth:8080
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+          MONGO_URI: mongodb://127.0.0.1:27017
+          MONGODB_DATABASE: skillhub_logs_test
+
+      - name: SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
