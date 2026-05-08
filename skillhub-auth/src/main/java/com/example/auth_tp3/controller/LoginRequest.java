@@ -1,31 +1,31 @@
-// ─────────────────────────────────────────────────────────────────
-// LoginRequest.java
-// Rôle : représente le corps de la requête POST /api/auth/login
-//
-// Ce fichier est un DTO (Data Transfer Object) — son seul rôle
-// est de transporter les données reçues depuis React vers
-// AuthController, sans aucune logique métier.
-//
-// ⚠️  À déplacer dans le dossier dto/ avant le rendu final
-//     package com.example.auth_tp3.dto
-// ─────────────────────────────────────────────────────────────────
-package com.example.auth_tp3.controller; // ⚠️ devrait être .dto
+package com.example.auth_tp3.controller;
 
-// @Data est une annotation Lombok qui génère automatiquement
-// à la compilation :
-//   - les getters  (getEmail(), getPassword())
-//   - les setters  (setEmail(), setPassword())
-//   - toString(), equals(), hashCode()
-// Sans Lombok il faudrait écrire toutes ces méthodes à la main
 import lombok.Data;
 
+/**
+ * DTO représentant le corps de la requête POST /api/auth/login.
+ *
+ * <p>Transporte les données de connexion depuis le client
+ * vers {@link AuthController}, sans aucune logique métier.</p>
+ *
+ * <p>Exemple de payload JSON attendu :
+ * <pre>
+ * {
+ *   "email":    "alice@mail.com",
+ *   "password": "MotDePasse123!"
+ * }
+ * </pre>
+ * </p>
+ *
+ * @author MU_202603
+ * @version 5.0
+ */
 @Data
 public class LoginRequest {
 
-    // Ces deux champs correspondent exactement aux clés JSON
-    // envoyées par React dans AuthContext.jsx :
-    // { "email": "...", "password": "..." }
-    // Spring Boot les mappe automatiquement grâce à @RequestBody
+    /** Adresse email de l'utilisateur (identifiant de connexion). */
     private String email;
+
+    /** Mot de passe en clair saisi par l'utilisateur. */
     private String password;
 }

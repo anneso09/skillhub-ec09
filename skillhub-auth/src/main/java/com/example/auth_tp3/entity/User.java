@@ -12,95 +12,92 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
 
-// ─────────────────────────────────────────────────────────────────
-// User.java
-// Rôle : représente la table "users" en base de données
-//
-// C'est une entité JPA — chaque instance de cette classe
-// correspond à une ligne dans la table MySQL "users".
-//
-// Cette table est partagée entre Spring Boot et Laravel :
-//   - Spring Boot : gère l'authentification (register, login)
-//   - Laravel     : lit les utilisateurs pour les formations,
-//                   inscriptions, etc.
-//
-// ⚠️  Les noms des colonnes doivent correspondre exactement
-//     à la migration Laravel (created_at, updated_at, etc.)
-// ─────────────────────────────────────────────────────────────────
-
-// @Data génère via Lombok : getters, setters,
-// toString(), equals(), hashCode()
+/**
+ * Entité JPA représentant la table "users" en base de données.
+ *
+ * <p>Cette table est partagée entre Spring Boot et Laravel :
+ * Spring Boot gère l'authentification (register, login),
+ * Laravel gère la logique métier (formations, inscriptions).</p>
+ *
+ * <p><strong>⚠️ Cette implémentation utilise un chiffrement
+ * réversible (AES via Master Key) nécessaire au protocole HMAC.
+ * Ne pas utiliser telle quelle en production sans audit
+ * de sécurité préalable.</strong></p>
+ *
+ * @author Ton nom
+ * @version 5.0
+ */
 @Data
-
-// @Entity indique à JPA que cette classe est mappée
-// sur une table en base de données
 @Entity
-
-// @Table précise le nom exact de la table MySQL
-// Sans cette annotation, JPA utiliserait "user" par défaut
-// ce qui est un mot réservé en SQL — toujours le préciser
 @Table(name = "users")
 public class User {
 
-    // ── Clé primaire ──────────────────────────────────────────
-    // @Id désigne ce champ comme clé primaire
-    // @GeneratedValue avec IDENTITY = auto-increment MySQL
-    // (équivalent du bigIncrements() dans Laravel)
+    /**
+     * Identifiant unique auto-incrémenté (clé primaire).
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ── Champs obligatoires ───────────────────────────────────
-    // nullable = false = contrainte NOT NULL en base
-    // Spring Boot lèvera une exception si ces champs
-    // sont null lors d'un save()
-
+    /**
+     * Nom de famille de l'utilisateur. Ne peut pas être null.
+     */
     @Column(nullable = false)
     private String nom;
 
+    /**
+     * Prénom de l'utilisateur. Ne peut pas être null.
+     */
     @Column(nullable = false)
     private String prenom;
 
-    // unique = true = contrainte UNIQUE en base
-    // Empêche deux utilisateurs d'avoir le même email
-    // AuthService vérifie aussi via existsByEmail()
-    // avant d'arriver ici — double protection
+    /**
+     * Adresse email unique de l'utilisateur.
+     * Utilisée comme identifiant de connexion.
+     */
     @Column(nullable = false, unique = true)
     private String email;
 
-    // Mot de passe toujours stocké hashé — jamais en clair
-    // Le hashage est fait dans AuthService via EncryptionService
-    // avant d'appeler user.setPassword()
+    /**
+     * Mot de passe chiffré via AES + Master Key.
+     * Jamais stocké en clair.
+     */
     @Column(nullable = false)
     private String password;
 
-    // Deux valeurs possibles : "apprenant" ou "formateur"
-    // Encodé dans le token JWT pour que Laravel puisse
-    // vérifier les permissions sans requête BDD supplémentaire
+    /**
+     * Rôle de l'utilisateur sur la plateforme SkillHub.
+     * Valeurs acceptées : "apprenant" ou "formateur".
+     */
     @Column(nullable = false)
     private String role;
 
-    // ── Timestamps ────────────────────────────────────────────
-    // name = "created_at" et "updated_at" correspondent aux
-    // colonnes générées automatiquement par Laravel dans
-    // ses migrations — important pour la compatibilité
+    /**
+     * Date et heure de création de l'enregistrement.
+     * Initialisée automatiquement avant le premier INSERT.
+     */
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    /**
+     * Date et heure de la dernière modification.
+     * Mise à jour automatiquement avant chaque UPDATE.
+     */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ── Callbacks JPA ─────────────────────────────────────────
-    // @PrePersist : exécuté automatiquement par JPA juste
-    // AVANT un INSERT en base (équivalent du creating() Laravel)
+    /**
+     * Initialise les timestamps avant le premier INSERT en base.
+     */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
-    // @PreUpdate : exécuté automatiquement par JPA juste
-    // AVANT un UPDATE en base (équivalent du updating() Laravel)
+    /**
+     * Met à jour le timestamp de modification avant chaque UPDATE.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
