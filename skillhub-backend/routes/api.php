@@ -20,7 +20,7 @@ use App\Http\Controllers\RatingController;
 //   jwt.verify        → authentifié (token valide requis)
 //   jwt.verify + role → authentifié ET rôle spécifique requis
 //
-// ⚠️  /api/register et /api/login sont commentés car
+//   /api/register et /api/login sont commentés car
 //     ces routes sont désormais gérées par Spring Boot (8080)
 //     et non plus par Laravel
 // ─────────────────────────────────────────────────────────────────
@@ -61,6 +61,7 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/formations',          [FormationController::class, 'store']);
         Route::put('/formations/{id}',      [FormationController::class, 'update']);
         Route::delete('/formations/{id}',   [FormationController::class, 'destroy']);
+        Route::get('/formations/{id}/apprenants', [EnrollmentController::class, 'apprenants']);
 
         // Mes formations (dashboard formateur)
         Route::get('/formateur/formations', [FormationController::class, 'mesFormations']);

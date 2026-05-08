@@ -186,4 +186,43 @@ class EnrollmentController extends Controller
             'enrollment' => $enrollment,
         ]);
     }
+
+    // ─────────────────────────────────────────────────────────
+// GET /api/formations/{id}/apprenants
+// Liste les apprenants inscrits à une formation
+//
+// Accès : formateur authentifié ET propriétaire
+// ─────────────────────────────────────────────────────────
+public function apprenants(Request $request, $formationId)
+{
+    $formateurId = $request->auth_user_id;
+
+    $formation = Formation::find($formationId);
+
+    if (!$formation) {
+        return response()->json(['message' => 'Formation introuvable'], 404);
+    }
+
+    // Vérifier que le formateur est bien propriétaire
+    if ($formation->formateur_id !== $formateurId) {
+        return response()->json([
+            'message' => 'Vous n\'êtes pas propriétaire de cette formation.'
+        ], 403);
+    }
+
+    $apprenants = Enrollment::where('formation_id', $formationId)
+        ->with('utilisateur:id,nom,email')
+        ->get()
+        ->map(function ($enrollment) {
+            return [
+                'id'               => $enrollment->utilisateur_id,
+                'nom'              => $enrollment->utilisateur->nom ?? null,
+                'email'            => $enrollment->utilisateur->email ?? null,
+                'progression'      => $enrollment->progression,
+                'date_inscription' => $enrollment->date_inscription,
+            ];
+        });
+
+    return response()->json($apprenants);
+}
 }
