@@ -54,4 +54,10 @@ class Formation extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    // Une formation peut avoir plusieurs notes
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
 }
